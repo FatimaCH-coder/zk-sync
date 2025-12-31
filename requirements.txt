@@ -19,7 +19,7 @@ pefile==2023.2.7
 ply==3.11
 proxy_tools==0.1.0
 pycparser==2.22
-pyinstaller==6.14.2
+pyinstaller==6.17.0
 pyinstaller-hooks-contrib==2025.6
 PyJWT==2.8.0
 python-dotenv==1.1.1
