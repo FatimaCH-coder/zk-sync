@@ -53,15 +53,57 @@ pip install -r requirements.txt
 
 ---
 
-## Running the App (Development)
+## Running the App
 
-```bash
-python app.py
+### Development Mode (with Auto-Reload)
+
+For development with automatic code reloading (like `npm run start:dev` in NestJS):
+
+1. **Add to your `.env` file:**
+   ```env
+   FLASK_DEBUG=True
+   # or
+   FLASK_ENV=development
+   ```
+
+2. **Run the app:**
+   ```bash
+   python app.py
+   ```
+
+3. **Features:**
+   - ✅ Auto-reloads when you change code files
+   - ✅ Better error messages with stack traces
+   - ✅ Debug mode enabled
+   - ✅ Browser opens automatically
+
+### Production Mode
+
+For production (no auto-reload):
+
+1. **Make sure `.env` has:**
+   ```env
+   FLASK_DEBUG=False
+   # or omit FLASK_DEBUG entirely
+   ```
+
+2. **Run the app:**
+   ```bash
+   python app.py
+   ```
+
+### Manual Port Configuration
+
+You can set a custom port in `.env`:
+```env
+FLASK_PORT=5000
 ```
 
+**Note:** 
 - The app will open in your default browser at [http://localhost:5000](http://localhost:5000)
 - Use the web interface to connect to your ZKTeco device, fetch attendance, and upload records.
 - To exit, click the red **Exit Application** button in the UI.
+- In development mode, press `Ctrl+C` in the terminal to stop the server.
 
 ---
 
@@ -124,10 +166,77 @@ create-dmg --volname "ZKTeco Attendance Uploader" --window-pos 200 120 --window-
 
 ## Usage
 
+### Pull SDK Method (Traditional - Current Default)
+
 1. **Connect to Device:** Enter the device IP and click Connect.
 2. **Select Date Range:** Choose start and end dates.
 3. **Fetch & Send:** Click to fetch attendance and upload to your backend.
 4. **View Records:** Attendance records are shown in a table.
 5. **Exit:** Click the red Exit Application button to close the app and server.
+
+### Push SDK Method (ADMS - Recommended for Multiple Networks)
+
+The Push SDK (ADMS) method allows ZKTeco devices to automatically send attendance data to your server in real-time. This is **highly recommended** for:
+- Multiple office locations across different networks
+- Real-time attendance tracking
+- No need for port forwarding or complex network configuration
+- Better scalability and reliability
+
+#### ADMS Setup Instructions
+
+1. **Deploy Your Application**
+   - Deploy this Flask application to a cloud server with a public IP/domain (e.g., AWS, Digital Ocean, Heroku, or your own server)
+   - Ensure the server is accessible via HTTPS (recommended) or HTTP
+   - Note the public URL (e.g., `https://your-server.com`)
+
+2. **Configure Environment Variables**
+   Add these to your `.env` file:
+   ```env
+   # ADMS Configuration
+   ADMS_API_KEY=your-secure-api-key-here  # Optional but recommended for security
+   ADMS_DEFAULT_ENV=dev  # or 'prod' - default environment for ADMS uploads
+   ADMS_SERVICE_TOKEN=your-backend-service-token  # Optional: token for backend authentication
+   ```
+
+3. **Configure ZKTeco Device (F-22 or compatible)**
+   - Access your ZKTeco device's web interface or use the device menu
+   - Navigate to **Network Settings** → **ADMS** (Attendance Management Data Service)
+   - Enable ADMS
+   - Set the **ADMS Server URL** to: `http://your-server.com:5000/adms/webhook`
+     - For HTTPS: `https://your-server.com/adms/webhook`
+   - If you configured `ADMS_API_KEY`, add it as a query parameter or header:
+     - URL format: `http://your-server.com:5000/adms/webhook?api_key=your-secure-api-key-here`
+   - Save the configuration
+
+4. **Test the Connection**
+   - Visit `http://your-server.com:5000/adms/status` to verify the endpoint is active
+   - Make a test punch on the device
+   - Check the server logs to confirm data is being received
+   - Verify the data appears in your HRMS backend
+
+#### ADMS Webhook Endpoint
+
+- **URL:** `/adms/webhook`
+- **Methods:** `POST`, `GET`
+- **Authentication:** Optional API key via `X-API-Key` header or `api_key` query parameter
+- **Data Format:** Accepts multiple ZKTeco ADMS data formats automatically
+
+#### ADMS vs Pull SDK Comparison
+
+| Feature | Pull SDK (Current) | Push SDK (ADMS) |
+|---------|-------------------|-----------------|
+| **Network Setup** | Requires port forwarding for remote devices | Works across any network with internet |
+| **Real-Time** | No (periodic polling) | Yes (instant push) |
+| **Scalability** | Limited by polling frequency | Excellent (device-initiated) |
+| **Server Load** | High (constant polling) | Low (only on events) |
+| **Best For** | Single location, local network | Multiple locations, distributed networks |
+
+#### ADMS Data Flow
+
+```
+ZKTeco Device → Internet → Your Server (/adms/webhook) → HRMS Backend → MongoDB
+```
+
+The device automatically pushes attendance data whenever an employee checks in/out, eliminating the need for manual fetching or scheduled polling.
 
 ---
